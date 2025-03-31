@@ -1,93 +1,117 @@
-// Define a cache name, including a version number
-const CACHE_NAME = 'muscle-soreness-tracker-cache-v1';
+// --- CHANGE: Increment Cache Version ---
+const CACHE_NAME = 'muscle-soreness-tracker-cache-v2';
 
 // List the files and resources to cache during installation
-// This should include the main HTML file and potentially CSS/JS if they were external
-// Since CSS/JS are inline or loaded from CDN in this example, caching index.html is key.
-// Add other essential assets if you have them (like actual icon files).
 const urlsToCache = [
   '/', // Represents the root directory, often resolves to index.html
   '/index.html', // Explicitly cache index.html
-  // Add paths to your actual icon files here if you want them cached:
-  // '/icons/icon-192.png',
-  // '/icons/icon-512.png',
-  // Note: The Tailwind CSS is loaded from a CDN, service workers typically don't cache cross-origin resources by default easily.
-  // For full offline Tailwind, you'd need to download it and serve it locally.
+  '/manifest.json', // Cache the manifest file itself
+
+  // --- CHANGE: Add paths to your actual icon files ---
+  // Make sure these paths match exactly where your icons are relative to sw.js
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  // Add any other icon sizes you included in the manifest here
 ];
 
 // Install event: Cache core assets
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
-  // Perform install steps
+  console.log('Service Worker V2: Installing...'); // Log version
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching app shell');
-        return cache.addAll(urlsToCache);
+        console.log('Service Worker V2: Caching app shell and icons');
+        // Use { cache: 'reload' } to bypass HTTP cache during install
+        const cachePromises = urlsToCache.map(urlToCache => {
+            // Ensure we request the root '/' correctly if needed
+            const requestUrl = urlToCache === '/' ? new Request(self.location.origin + '/', {cache: 'reload'}) : new Request(urlToCache, {cache: 'reload'});
+            return cache.add(requestUrl).catch(err => console.error(`SW Cache add failed for ${urlToCache}:`, err));
+        });
+        return Promise.all(cachePromises);
       })
       .then(() => {
-        console.log('Service Worker: Installation complete');
-        // Activate the new service worker immediately
-        return self.skipWaiting();
+        console.log('Service Worker V2: Installation complete');
+        return self.skipWaiting(); // Activate immediately
+      })
+      .catch(error => {
+          console.error('Service Worker V2: Installation failed', error);
       })
   );
 });
 
 // Activate event: Clean up old caches
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating...');
+  console.log('Service Worker V2: Activating...');
   const cacheWhitelist = [CACHE_NAME]; // Only keep the current cache version
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Service Worker: Deleting old cache:', cacheName);
+            console.log('Service Worker V2: Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     }).then(() => {
-        console.log('Service Worker: Activation complete, claiming clients.');
-        // Take control of currently open pages
-        return self.clients.claim();
+        console.log('Service Worker V2: Activation complete, claiming clients.');
+        return self.clients.claim(); // Take control immediately
     })
   );
 });
 
 
-// Fetch event: Serve cached content when offline
+// Fetch event: Serve cached content when offline (Cache First strategy)
 self.addEventListener('fetch', event => {
-  console.log('Service Worker: Fetching', event.request.url);
+  // Only handle GET requests
+  if (event.request.method !== 'GET') {
+      return;
+  }
+
+  // console.log('Service Worker V2: Fetching', event.request.url); // Reduce logging noise
   event.respondWith(
-    // Try to find the response in the cache
-    caches.match(event.request)
-      .then(response => {
-        // Return response from cache if found
-        if (response) {
-          console.log('Service Worker: Found in cache', event.request.url);
-          return response;
+    caches.match(event.request) // Check cache first
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          // console.log('Service Worker V2: Found in cache', event.request.url);
+          return cachedResponse; // Return cached version
         }
 
-        // If not found in cache, try to fetch from the network
-        console.log('Service Worker: Not found in cache, fetching from network', event.request.url);
-        return fetch(event.request)
-                .then(networkResponse => {
-                    // Optional: Cache the newly fetched resource if needed (be careful with dynamic content)
-                    // For this simple app, we primarily rely on the install-time cache.
-                    return networkResponse;
-                })
-                .catch(error => {
-                    // Handle network errors (e.g., show an offline page)
-                    // For this basic example, just log the error.
-                    console.error('Service Worker: Fetch failed; returning offline fallback or error for', event.request.url, error);
-                    // You could return a generic offline response here if needed:
-                    // return new Response("You are offline.", { status: 503, statusText: "Service Unavailable" });
-                });
+        // console.log('Service Worker V2: Not found in cache, fetching from network', event.request.url);
+        // IMPORTANT: Clone the request. A request is a stream and
+        // can only be consumed once. We need two streams: one for the
+        // cache and one for the browser to render.
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest).then(networkResponse => {
+            // Check if we received a valid response
+            if(!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+                // Don't cache non-basic (cross-origin like CDN) or error responses
+                return networkResponse;
+            }
+
+            // IMPORTANT: Clone the response. A response is a stream
+            // and because we want the browser to consume the response
+            // as well as the cache consuming the response, we need
+            // to clone it so we have two streams.
+            const responseToCache = networkResponse.clone();
+
+            // Cache the fetched resource IF it's from our origin
+            // (Avoid caching external resources like the Tailwind CDN here)
+            if (event.request.url.startsWith(self.location.origin)) {
+                caches.open(CACHE_NAME)
+                  .then(cache => {
+                    console.log('Service Worker V2: Caching new resource:', event.request.url);
+                    cache.put(event.request, responseToCache);
+                  });
+            }
+
+            return networkResponse;
+        }).catch(error => {
+            console.error('Service Worker V2: Fetch failed', error);
+            // Optional: return an offline fallback page
+            // return caches.match('/offline.html');
+        });
       })
   );
 });
-```
-* This service worker caches the `index.html` file when it's first installed.
-* When the browser requests a file, the service worker first checks the cache. If it's found, it serves the cached version (making it work offline). If not, it tries to fetch it from the network.
-* It also includes logic to clean up old caches when the service worker version chang
