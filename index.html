@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a"> <title>Daily Muscle Tracker</title>
+
+    
+    
+    <script src="https://cdn.tailwindcss.com" defer></script>
+
+    <style>
+      /* Base body styling - Permanent Dark Theme */
+      body {
+          font-family: sans-serif;
+          overscroll-behavior-y: contain;
+          background-color: #0f172a; /* slate-900 */
+          color: #e5e7eb; /* gray-200 */
+      }
+
+      /* Main container */
+      .main-container {
+           max-width: 56rem; /* max-w-4xl */
+           margin-left: auto;
+           margin-right: auto;
+           background-color: #1e293b; /* slate-800 */
+           border-radius: 0.75rem; /* rounded-xl */
+           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+           padding: 1.25rem; /* p-5 */
+      }
+      @media (min-width: 768px) {
+          .main-container { padding: 2rem; } /* md:p-8 */
+      }
+
+      /* Header */
+      .header-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem; /* mb-4 */
+          flex-wrap: wrap;
+          gap: 0.5rem; /* gap-2 */
+      }
+      .header-title {
+          font-size: 1.5rem; /* text-2xl */
+          line-height: 2rem;
+          font-weight: 700; /* font-bold */
+          color: #f3f4f6; /* gray-100 */
+      }
+
+      /* Add Muscle Section */
+      .add-muscle-section {
+          display: flex;
+          gap: 0.5rem; /* gap-2 */
+          margin-bottom: 1rem; /* mb-4 */
+          padding-left: 0.25rem; /* px-1 */
+          padding-right: 0.25rem;
+      }
+      #new-muscle-input {
+          flex-grow: 1;
+          padding: 0.5rem; /* p-2 */
+          border-width: 1px;
+          border-color: #475569; /* slate-600 */
+          background-color: #334155; /* slate-700 */
+          color: #f3f4f6; /* gray-100 */
+          border-radius: 0.375rem; /* rounded-md */
+      }
+      #new-muscle-input::placeholder {
+          color: #9ca3af; /* gray-400 */
+      }
+      #new-muscle-input:focus {
+          outline: 2px solid transparent;
+          outline-offset: 2px;
+          box-shadow: 0 0 0 2px #3b82f6; /* ring-2 ring-blue-500 */
+      }
+      #add-muscle-btn {
+          padding-left: 1rem; padding-right: 1rem; /* px-4 */
+          padding-top: 0.5rem; padding-bottom: 0.5rem; /* py-2 */
+          background-color: #15803d; /* green-600 */
+          color: white;
+          font-weight: 600; /* font-semibold */
+          border-radius: 0.375rem; /* rounded-md */
+          box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow */
+      }
+      #add-muscle-btn:hover { background-color: #166534; } /* green-700 */
+      #add-muscle-btn:focus {
+          outline: 2px solid transparent; outline-offset: 2px;
+          box-shadow: 0 0 0 2px #22c55e, 0 0 0 4px #1e293b; /* ring-2 ring-green-500 ring-offset-2 ring-offset-slate-800 */
+      }
+
+      /* Reset Button */
+       #reset-button {
+           padding-left: 1rem; padding-right: 1rem; /* px-4 */
+           padding-top: 0.5rem; padding-bottom: 0.5rem; /* py-2 */
+           background-color: #dc2626; /* red-600 */
+           color: white;
+           font-weight: 600; /* font-semibold */
+           border-radius: 0.5rem; /* rounded-lg */
+           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+       }
+       #reset-button:hover { background-color: #b91c1c; } /* red-700 */
+       #reset-button:focus {
+           outline: 2px solid transparent; outline-offset: 2px;
+            box-shadow: 0 0 0 2px #f87171, 0 0 0 4px #1e293b; /* ring-2 ring-red-500 ring-offset-2 ring-offset-slate-800 */
+       }
+
+      /* Legend */
+      .legend-container {
+          margin-top: 2rem; /* mt-8 */
+          padding-top: 1rem; /* pt-4 */
+          border-top-width: 1px;
+          border-color: #334155; /* slate-700 */
+          font-size: 0.875rem; /* text-sm */
+          line-height: 1.25rem;
+          color: #9ca3af; /* gray-400 */
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 1rem; /* gap-x-4 */
+      }
+      .legend-item { display: flex; align-items: center; }
+      .legend-emoji { font-size: 1.25rem; margin-right: 0.25rem; } /* text-xl mr-1 */
+      .legend-swatch {
+          display: inline-block; width: 1rem; height: 1rem; /* w-4 h-4 */
+          border-width: 1px; border-color: #0369a1; /* border-blue-500 / sky-600 */
+          margin-right: 0.25rem; /* mr-1 */
+          border-radius: 0.25rem; /* rounded */
+          background-color: #075985; /* bg-blue-700 / sky-800 */
+      }
+
+      /* Table Container */
+      .table-scroll-container { overflow-x: auto; }
+
+      /* Styling for the clickable status emojis */
+      .status-emoji {
+        cursor: pointer; padding: 0.25rem; border-radius: 0.375rem;
+        transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        font-size: 1.5rem; line-height: 1; display: inline-flex; align-items: center;
+        justify-content: center; width: 40px; height: 40px; border: 1px solid transparent;
+        background-color: transparent; position: relative; z-index: 2;
+      }
+      .status-emoji:hover {
+        transform: scale(1.1);
+        background-color: rgba(255, 255, 255, 0.1); /* bg-white/10 */
+      }
+      .status-emoji:active { transform: scale(0.95); }
+
+       /* Table layout */
+       .tracker-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+       .tracker-table th, .tracker-table td {
+           text-align: center; padding: 0;
+           /* --- Use Direct CSS for Borders --- */
+           border: 1px solid #64748b; /* slate-500 */
+           vertical-align: middle; position: relative;
+       }
+       .tracker-table th {
+           background-color: rgba(51, 65, 85, 0.5); /* slate-700/[0.5] */
+           font-weight: 600; font-size: 0.875rem;
+           color: #d1d5db; /* gray-300 */
+           white-space: nowrap; padding: 0.5rem 0.25rem;
+       }
+       /* Muscle Name Column */
+       .tracker-table th:first-child,
+       .tracker-table td:first-child {
+           position: sticky; left: 0; z-index: 10;
+           background-color: #1e293b; /* slate-800 */
+           text-align: left; font-weight: 500;
+           color: #f3f4f6; /* gray-100 */
+           width: 150px;
+           /* --- Use Direct CSS for Borders --- */
+           border: 1px solid #64748b; /* slate-500 */
+       }
+       .tracker-table th:first-child { z-index: 11; }
+
+       /* Container within the cell */
+       .cell-content-container {
+           padding: 0.5rem 0.25rem; min-height: 50px; display: flex;
+           align-items: center; justify-content: center; position: relative;
+           z-index: 1; cursor: pointer; transition: background-color 0.2s ease-in-out;
+           background-color: transparent;
+       }
+       .tracker-table td:first-child .cell-content-container {
+           justify-content: flex-start; padding-left: 0.75rem; cursor: default;
+           background-color: transparent !important;
+       }
+
+       /* --- Zebra Striping --- */
+       .tracker-table tbody tr:nth-child(even) {
+           /* --- Use Direct CSS --- */
+           background-color: rgba(255, 255, 255, 0.05); /* Slightly more visible white overlay */
+       }
+       .tracker-table tbody tr:nth-child(even) td:first-child {
+            /* --- Use Direct CSS --- */
+            background-color: #334155; /* slate-700 */
+            border: 1px solid #64748b; /* slate-500 */
+       }
+
+       /* --- Workout Indicator Style --- */
+       .cell-content-container.worked-out {
+            /* Using direct CSS + !important worked previously */
+            background-color: #1d4ed8 !important; /* blue-700 hex code */
+       }
+
+       /* Drag and Drop Styles */
+       .drag-handle {
+           cursor: grab; display: inline-block; margin-right: 8px;
+           color: #6b7280; /* gray-500 */
+           padding: 10px 5px; touch-action: none; vertical-align: middle;
+       }
+       .muscle-name-text { flex-grow: 1; vertical-align: middle; }
+       .muscle-row.dragging {
+           opacity: 0.6;
+           background-color: #1e1b4b !important; /* indigo-900 */
+       }
+       .muscle-row.dragging td { background-color: #1e1b4b !important; }
+       .muscle-row.dragging td:first-child { background-color: #312e81 !important; } /* indigo-800 */
+       .drag-over { border-top: 2px dashed #60a5fa; } /* blue-400 */
+
+       /* Swipe Styles */
+       .muscle-row td { overflow: hidden; }
+       .delete-indicator {
+           position: absolute; top: 0; right: 0; bottom: 0; width: 80px;
+           background-color: #9f1239; /* red-700 */ color: white;
+           display: flex; align-items: center; justify-content: center;
+           font-weight: bold; z-index: 0; opacity: 0;
+           transition: opacity 0.2s ease-in-out; pointer-events: none;
+       }
+       .muscle-row.swiping .delete-indicator { opacity: 1; }
+       .muscle-row .cell-content-container {
+           transition: transform 0.1s ease-out;
+           width: 100%; height: 100%;
+       }
+       .muscle-row.swiping .cell-content-container {
+           transition: none;
+           background-color: rgba(159, 18, 57, 0.7) !important; /* red-800/[0.7] */
+       }
+       .tracker-table td:first-child .cell-content-container {
+           transform: none !important;
+           background-color: transparent !important;
+       }
+
+    </style>
+
+</head>
+<body class="bg-slate-900 text-gray-200">
+
+    
+    <div class="main-container"> 
+        
+        <div class="overflow-x-hidden">
+             <div class="header-flex">
+                <h1 class="header-title">Weekly Muscle Soreness Tracker</h1>
+                </div>
+
+            <div class="add-muscle-section">
+                <input type="text" id="new-muscle-input" placeholder="Enter new muscle group" class="flex-grow p-2 border rounded-md focus:outline-none focus:ring-2">
+                <button id="add-muscle-btn">Add</button>
+            </div>
+
+            <div class="table-scroll-container">
+                <div id="tracker-container">
+                    </div>
+            </div>
+
+            <div class="text-center mt-6">
+                 <button id="reset-button">
+                     Reset All Statuses
+                 </button>
+            </div>
+
+            <div class="legend-container">
+                <div class="legend-item"><span class="legend-emoji">🔥</span> Sore</div>
+                <div class="legend-item"><span class="legend-emoji">✅</span> Healed</div>
+                <div class="legend-item"><span class="legend-emoji">➖</span> No Effect</div>
+                <div class="legend-item"><span class="legend-emoji">⚪</span> Untracked</div>
+                <div class="legend-item"><span class="legend-swatch"></span> Worked Out</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- JavaScript remains the same as the previous version ---
+        // --- (pwa_muscle_tracker_dark_fixes) ---
+        // Includes State Definitions, LocalStorage, UI Updates, Event Handlers, Drag/Drop, Swipe, Initialization
+        console.log("Script start - Dark Theme Only - Direct CSS Attempt");
+
+        // --- State Definitions ---
+        let muscleGroups = [];
+        const defaultMuscleGroups = [ 'Pectorals', 'Biceps', 'Triceps', 'Delts', 'Lats', 'Mid Back', 'Quads', 'Hamstrings', 'Calves', 'Glutes', 'Forearms' ];
+        const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const states = { sore: '🔥', healed: '✅', no_effect: '➖', untracked: '⚪' };
+        const stateKeys = Object.keys(states);
+        const stateIntMap = { untracked: 0, sore: 1, healed: 2, no_effect: 3 };
+        const intStateMap = { 0: 'untracked', 1: 'sore', 2: 'healed', 3: 'no_effect' };
+
+        // --- LocalStorage Interaction ---
+        const MUSCLE_LIST_KEY = 'muscleTracker_muscleList_v2';
+        const STATUS_KEY_PREFIX = 'muscleTracker_status_pwa_v2_';
+        const WORKOUT_KEY_PREFIX = 'muscleTracker_workout_pwa_v2_';
+
+        function getStatusStorageKey(muscle, day) { const m = muscle.replace(/\s+/g, '_').toLowerCase(); return `${STATUS_KEY_PREFIX}${m}_${day.toLowerCase()}`; }
+        function getStatus(muscle, day) { const i = localStorage.getItem(getStatusStorageKey(muscle, day)); return intStateMap[i] || 'untracked'; }
+        function setStatus(muscle, day, statusKey) { const k = getStatusStorageKey(muscle, day); const i = stateIntMap[statusKey]; if (statusKey === 'untracked') localStorage.removeItem(k); else localStorage.setItem(k, i); }
+        function getWorkoutStorageKey(muscle, day) { const m = muscle.replace(/\s+/g, '_').toLowerCase(); return `${WORKOUT_KEY_PREFIX}${m}_${day.toLowerCase()}`; }
+        function getWorkoutStatus(muscle, day) { return localStorage.getItem(getWorkoutStorageKey(muscle, day)) === '1'; }
+        function setWorkoutStatus(muscle, day, workedOut) { const key = getWorkoutStorageKey(muscle, day); if (workedOut) { localStorage.setItem(key, '1'); } else { localStorage.removeItem(key); } updateCellWorkoutStatus(muscle, day); }
+        function loadMuscleGroups() { const s = localStorage.getItem(MUSCLE_LIST_KEY); if (s) { try { const p = JSON.parse(s); if (Array.isArray(p) && p.every(m => typeof m === 'string')) { muscleGroups = p; } else { throw new Error("Invalid"); } } catch (e) { console.warn("Using default muscles.", e); muscleGroups = [...defaultMuscleGroups]; saveMuscleGroups(); } } else { muscleGroups = [...defaultMuscleGroups]; } }
+        function saveMuscleGroups() { localStorage.setItem(MUSCLE_LIST_KEY, JSON.stringify(muscleGroups)); }
+
+        // --- UI Update Functions ---
+        function renderTable() {
+            const container = document.getElementById('tracker-container');
+            if (!container) { console.error("Tracker container not found!"); return; }
+            container.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.className = 'tracker-table'; // Use direct CSS now
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const thMuscle = document.createElement('th'); thMuscle.textContent = 'Muscle'; headerRow.appendChild(thMuscle);
+            daysOfWeek.forEach(day => { const thDay = document.createElement('th'); thDay.textContent = day; headerRow.appendChild(thDay); });
+
+            const tbody = table.createTBody();
+            if (muscleGroups.length === 0) {
+                const row = tbody.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = daysOfWeek.length + 1;
+                cell.textContent = "No muscle groups added yet.";
+                cell.className = 'text-center text-gray-400 py-4';
+            } else {
+                muscleGroups.forEach((muscle, index) => {
+                    const row = tbody.insertRow();
+                    row.className = 'muscle-row';
+                    row.setAttribute('draggable', 'true');
+                    row.dataset.muscleIndex = index; row.dataset.muscleName = muscle;
+
+                    row.addEventListener('dragstart', handleDragStart); row.addEventListener('dragover', handleDragOver); row.addEventListener('dragenter', handleDragEnter); row.addEventListener('dragleave', handleDragLeave); row.addEventListener('drop', handleDrop); row.addEventListener('dragend', handleDragEnd);
+                    row.addEventListener('touchstart', handleTouchStart, { passive: false }); row.addEventListener('touchmove', handleTouchMove, { passive: false }); row.addEventListener('touchend', handleTouchEnd); row.addEventListener('touchcancel', handleTouchEnd);
+
+                    const cellMuscle = row.insertCell(); cellMuscle.classList.add('relative');
+                    const muscleWrapper = document.createElement('div'); muscleWrapper.className = 'cell-content-container first-cell-wrapper';
+                    muscleWrapper.innerHTML = `<span class="drag-handle">☰</span><span class="muscle-name-text">${escapeHtml(muscle)}</span>`;
+                    cellMuscle.appendChild(muscleWrapper);
+                    const deleteIndicator = document.createElement('div'); deleteIndicator.className = 'delete-indicator'; deleteIndicator.textContent = 'Delete'; cellMuscle.appendChild(deleteIndicator);
+
+                    daysOfWeek.forEach(day => {
+                        const cell = row.insertCell(); cell.classList.add('relative');
+                        const muscleKey = muscle.replace(/\s+/g, '_').toLowerCase(); const dayKey = day.toLowerCase();
+                        cell.id = `cell-${muscleKey}-${dayKey}`;
+                        const cellWrapper = document.createElement('div'); cellWrapper.className = 'cell-content-container';
+                        cellWrapper.dataset.muscle = muscle; cellWrapper.dataset.day = day; cell.appendChild(cellWrapper);
+                        const emojiContainer = document.createElement('div'); emojiContainer.className = 'emoji-container'; cellWrapper.appendChild(emojiContainer);
+                        cellWrapper.addEventListener('click', handleWorkoutToggle);
+
+                        requestAnimationFrame(() => { updateCellEmoji(muscle, day); updateCellWorkoutStatus(muscle, day); });
+                    });
+                });
+            }
+            container.appendChild(table);
+        }
+
+        function updateCellEmoji(muscle, day) {
+            const muscleKey = muscle.replace(/\s+/g, '_').toLowerCase(); const dayKey = day.toLowerCase();
+            const currentStatusKey = getStatus(muscle, day); const currentStateInt = stateIntMap[currentStatusKey];
+            const cell = document.getElementById(`cell-${muscleKey}-${dayKey}`); if (!cell) return;
+            const emojiContainer = cell.querySelector('.emoji-container'); if (!emojiContainer) return;
+            emojiContainer.innerHTML = '';
+            const emojiSpan = document.createElement('span'); emojiSpan.className = 'status-emoji';
+            emojiSpan.textContent = states[currentStatusKey]; emojiSpan.setAttribute('aria-label', `${escapeHtml(muscle)} on ${day} is ${currentStatusKey.replace('_', ' ')}`); emojiSpan.setAttribute('role', 'button');
+            emojiSpan.addEventListener('click', (event) => { event.stopPropagation(); cycleStatus(event, muscle, day, currentStateInt); });
+            emojiContainer.appendChild(emojiSpan);
+        }
+
+        function updateCellWorkoutStatus(muscle, day) {
+             const muscleKey = muscle.replace(/\s+/g, '_').toLowerCase(); const dayKey = day.toLowerCase();
+             const cell = document.getElementById(`cell-${muscleKey}-${dayKey}`); if (!cell) return;
+             const cellWrapper = cell.querySelector('.cell-content-container'); if (!cellWrapper) return;
+             const workedOut = getWorkoutStatus(muscle, day);
+             cellWrapper.classList.toggle('worked-out', workedOut);
+        }
+
+        function escapeHtml(unsafe) { if (!unsafe) return ''; return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+
+        // --- Event Handlers ---
+        function cycleStatus(event, muscle, day, currentStateInt) { const currentStatusKey = intStateMap[currentStateInt]; const currentIndex = stateKeys.indexOf(currentStatusKey); const nextIndex = (currentIndex + 1) % stateKeys.length; const nextStatusKey = stateKeys[nextIndex]; setStatus(muscle, day, nextStatusKey); updateCellEmoji(muscle, day); }
+        function handleWorkoutToggle(event) { if (event.target.closest('.status-emoji')) return; const muscle = this.dataset.muscle; const day = this.dataset.day; if (!muscle || !day) { console.error("Missing muscle/day data on clicked element:", this); return; } const currentWorkoutStatus = getWorkoutStatus(muscle, day); setWorkoutStatus(muscle, day, !currentWorkoutStatus); }
+        function handleAddMuscle() { const input = document.getElementById('new-muscle-input'); const newMuscleName = input.value.trim(); if (newMuscleName === '') { alert('Please enter a muscle name.'); return; } if (muscleGroups.some(m => m.toLowerCase() === newMuscleName.toLowerCase())) { alert(`Muscle group "${escapeHtml(newMuscleName)}" already exists.`); return; } muscleGroups.push(newMuscleName); saveMuscleGroups(); renderTable(); input.value = ''; }
+        function handleDeleteMuscle(muscleToDelete) { if (!muscleToDelete) return; daysOfWeek.forEach(day => { localStorage.removeItem(getStatusStorageKey(muscleToDelete, day)); localStorage.removeItem(getWorkoutStorageKey(muscleToDelete, day)); }); muscleGroups = muscleGroups.filter(m => m !== muscleToDelete); saveMuscleGroups(); renderTable(); }
+        function resetAllStatuses() { if (confirm('Are you sure you want to reset all statuses AND workout indicators for the week?')) { const keysToRemove = []; muscleGroups.forEach(muscle => { daysOfWeek.forEach(day => { keysToRemove.push(getStatusStorageKey(muscle, day)); keysToRemove.push(getWorkoutStorageKey(muscle, day)); }); }); keysToRemove.forEach(key => localStorage.removeItem(key)); renderTable(); } }
+
+        // --- Drag and Drop Handlers --- (Unchanged)
+        let draggedItem = null; let draggedItemIndex = -1; let isDragging = false;
+        function handleDragStart(e) { if (isSwiping || touchStartX !== null) { e.preventDefault(); return; } isDragging = true; draggedItem = this; draggedItemIndex = parseInt(this.dataset.muscleIndex, 10); e.dataTransfer.effectAllowed = 'move'; const dragImage = document.createElement('div'); dragImage.style.width = '1px'; dragImage.style.height = '1px'; dragImage.style.opacity = '0'; document.body.appendChild(dragImage); try { e.dataTransfer.setDragImage(dragImage, 0, 0); } catch (err) {} setTimeout(() => { draggedItem?.classList.add('dragging'); }, 0); }
+        function handleDragOver(e) { if (!isDragging) return; e.preventDefault(); e.dataTransfer.dropEffect = 'move'; const targetRow = e.target.closest('tr.muscle-row'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); if (targetRow && targetRow !== draggedItem) { targetRow.classList.add('drag-over'); } return false; }
+        function handleDragEnter(e) { /* Combined */ }
+        function handleDragLeave(e) { if (!isDragging) return; const relatedTarget = e.relatedTarget; const targetRow = e.target.closest('tr.muscle-row'); if (targetRow && (!relatedTarget || !targetRow.contains(relatedTarget))) { targetRow.classList.remove('drag-over'); } }
+        function handleDrop(e) { if (!isDragging) return; e.preventDefault(); e.stopPropagation(); const targetRow = e.target.closest('tr.muscle-row'); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); if (targetRow && draggedItem && targetRow !== draggedItem) { const targetIndex = parseInt(targetRow.dataset.muscleIndex, 10); if (draggedItemIndex !== -1 && targetIndex !== -1 && !isNaN(draggedItemIndex) && !isNaN(targetIndex)) { const itemToMove = muscleGroups.splice(draggedItemIndex, 1)[0]; muscleGroups.splice(targetIndex, 0, itemToMove); saveMuscleGroups(); renderTable(); } else { console.error("Drag/Drop index error", {draggedItemIndex, targetIndex}); } } const dragImage = document.querySelector('div[style*="width: 1px"]'); if (dragImage && dragImage.parentNode === document.body) document.body.removeChild(dragImage); handleDragEndCleanup(); return false; }
+        function handleDragEnd(e) { handleDragEndCleanup(); }
+        function handleDragEndCleanup() { if (!isDragging) return; document.querySelectorAll('.muscle-row').forEach(row => { row.classList.remove('dragging'); row.classList.remove('drag-over'); }); draggedItem = null; draggedItemIndex = -1; isDragging = false; }
+
+        // --- Swipe Detection Handlers --- (Unchanged)
+        let touchStartX = null; let touchCurrentX = null; let touchStartY = null; let swipedRow = null; let isSwiping = false; const swipeThreshold = -75; const verticalScrollThreshold = 10;
+        function handleTouchStart(e) { if (isDragging || e.touches.length > 1 || e.target.closest('.status-emoji') || e.target.closest('.drag-handle')) { return; } touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; touchCurrentX = touchStartX; swipedRow = e.target.closest('tr.muscle-row'); isSwiping = false; if (swipedRow) swipedRow.setAttribute('draggable', 'false'); }
+        function handleTouchMove(e) { if (!touchStartX || isDragging || !swipedRow || e.touches.length > 1) return; touchCurrentX = e.touches[0].clientX; const currentY = e.touches[0].clientY; const diffX = touchCurrentX - touchStartX; const diffY = Math.abs(currentY - touchStartY); if (!isSwiping) { if (diffY > verticalScrollThreshold && diffY > Math.abs(diffX)) { resetSwipeState(); return; } if (Math.abs(diffX) > 10) { isSwiping = true; swipedRow.classList.add('swiping'); } } if (isSwiping) { e.preventDefault(); const translateX = Math.min(0, diffX); const wrappers = swipedRow.querySelectorAll('.cell-content-container:not(.first-cell-wrapper)'); wrappers.forEach(wrapper => { wrapper.style.transform = `translateX(${translateX}px)`; }); const firstCellWrapper = swipedRow.cells[0].querySelector('.cell-content-container'); if(firstCellWrapper) { firstCellWrapper.style.transform = `translateX(${translateX}px)`; } } }
+        function handleTouchEnd(e) { if (!swipedRow) { resetSwipeState(); return; } const wasSwiping = isSwiping; const diffX = touchCurrentX - touchStartX; const muscleToDelete = swipedRow.dataset.muscleName; const wrappers = swipedRow.querySelectorAll('.cell-content-container'); wrappers.forEach(wrapper => { wrapper.style.transform = 'translateX(0px)'; }); resetSwipeState(); if (wasSwiping && diffX < swipeThreshold) { setTimeout(() => { if (confirm(`Are you sure you want to delete "${escapeHtml(muscleToDelete)}"? This will also remove its status data.`)) { handleDeleteMuscle(muscleToDelete); } }, 50); } }
+        function resetSwipeState() { if (swipedRow) { swipedRow.classList.remove('swiping'); const wrappers = swipedRow.querySelectorAll('.cell-content-container'); wrappers.forEach(wrapper => { wrapper.style.transform = 'translateX(0px)'; }); swipedRow.setAttribute('draggable', 'true'); } swipedRow = null; touchStartX = null; touchStartY = null; touchCurrentX = null; isSwiping = false; }
+
+        // --- App Initialization ---
+        function initializeApp() {
+            console.log("initializeApp start");
+            loadMuscleGroups();
+            renderTable();
+
+            const addButton = document.getElementById('add-muscle-btn');
+            if (addButton) addButton.addEventListener('click', handleAddMuscle);
+            else console.error("Add muscle button not found!");
+
+            const resetButton = document.getElementById('reset-button');
+             if (resetButton) resetButton.addEventListener('click', resetAllStatuses);
+             else console.error("Reset button not found!");
+
+            console.log("initializeApp end");
+        }
+
+        // Initialize App and Register Service Worker
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then(reg => console.log('ServiceWorker registration successful with scope: ', reg.scope))
+              .catch(err => console.log('ServiceWorker registration failed: ', err));
+          });
+        } else {
+            console.log('Service workers are not supported.');
+        }
+
+        console.log("Script end");
+    </script>
+
+</body>
+</html>

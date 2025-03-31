@@ -1,0 +1,29 @@
+{
+  "name": "Muscle Soreness Tracker",
+  "short_name": "Soreness",
+  "description": "A simple PWA to track muscle soreness throughout the week.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icons/icon192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable" 
+    },
+    {
+      "src": "icons/icon512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+       "purpose": "any maskable"
+    }
+  ]
+}
+```
+* **`name` / `short_name`:** How the app appears.
+* **`start_url`:** The page that loads when the app starts (`.` means the current directory, i.e., `index.html`).
+* **`display: standalone`:** Makes it look like a native app (no browser address bar).
+* **`background_color` / `theme_color`:** Used for the splash screen and browser UI theming.
+* **`icons`:** Crucial for the home screen icon. You need to create actual PNG icons (e.g., 192x192 and 512x512 pixels) and update the `src` paths. The `purpose: "any maskable"` helps ensure the icon looks good on different Android shap
