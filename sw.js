@@ -9,8 +9,8 @@ const urlsToCache = [
 
   // --- CHANGE: Add paths to your actual icon files ---
   // Make sure these paths match exactly where your icons are relative to sw.js
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  '/icons/icon192.png',
+  '/icons/icon512.png',
   // Add any other icon sizes you included in the manifest here
 ];
 
